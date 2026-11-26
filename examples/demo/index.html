@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>vanilla-kit demo</title>
+  <link rel="stylesheet" href="demo.css">
+</head>
+<body>
+  <header>
+    <h1>vanilla-kit</h1>
+    <p>Browser modules running under <code>Content-Security-Policy: script-src 'self'; style-src 'self'</code>. No dependencies, no build step.</p>
+  </header>
+
+  <main>
+    <section aria-labelledby="qr-h">
+      <h2 id="qr-h">qr.js</h2>
+      <label for="qr-text">Text</label>
+      <input id="qr-text" type="text" value="https://example.com/">
+      <label for="qr-ecl">Error correction</label>
+      <select id="qr-ecl">
+        <option value="L">L (7%)</option>
+        <option value="M" selected>M (15%)</option>
+        <option value="Q">Q (25%)</option>
+        <option value="H">H (30%)</option>
+      </select>
+      <div id="qr-out" class="qr" role="img" aria-label="QR code"></div>
+      <p id="qr-info" class="info"></p>
+    </section>
+
+    <section aria-labelledby="md-h">
+      <h2 id="md-h">markdown.js</h2>
+      <label for="md-src">Markdown (raw HTML and javascript: links are neutralised)</label>
+      <textarea id="md-src" rows="12"></textarea>
+      <div id="md-out" class="md"></div>
+    </section>
+
+    <section aria-labelledby="diff-h">
+      <h2 id="diff-h">diff.js</h2>
+      <div class="two">
+        <div><label for="diff-a">Old</label><textarea id="diff-a" rows="6"></textarea></div>
+        <div><label for="diff-b">New</label><textarea id="diff-b" rows="6"></textarea></div>
+      </div>
+      <pre id="diff-out" class="diff"></pre>
+    </section>
+
+    <section aria-labelledby="color-h">
+      <h2 id="color-h">color.js</h2>
+      <div class="two">
+        <div><label for="color-fg">Text colour</label><input id="color-fg" type="text" value="#777777"></div>
+        <div><label for="color-bg">Background</label><input id="color-bg" type="text" value="#ffffff"></div>
+      </div>
+      <p id="color-out" class="info"></p>
+    </section>
+  </main>
+
+  <script src="../../browser/qr.js"></script>
+  <script src="../../browser/markdown.js"></script>
+  <script src="../../browser/diff.js"></script>
+  <script src="../../browser/color.js"></script>
+  <script src="demo.js"></script>
+</body>
+</html>

@@ -15,8 +15,13 @@
 | [`browser/color.js`](#colorjs) | 브라우저 + Node | 8.3 KB / 3.3 KB | `VanillaColor.contrast(VanillaColor.parse('#777'), VanillaColor.parse('#fff'))` |
 | [`node/zip.js`](#zipjs) | Node | 8.1 KB / 3.0 KB | `zip([{ name: 'a.txt', data: 'hi' }])` → `Buffer` |
 | [`node/smtp.js`](#smtpjs) | Node | 13.9 KB / 5.2 KB | `await sendMail({ host, port, user, pass }, { from, to, subject, text })` |
+| [`node/docx.js`](#docxjs) | Node | 11.8 KB / 4.2 KB | `docx({ title, body: [{ heading: 1, text: '제목' }, '문단'] })` → `Buffer` |
+| [`node/websocket.js`](#websocketjs) | Node | 20.9 KB / 6.8 KB | `createServer({ server, path: '/ws' }).on('connection', c => c.on('message', ...))` |
 
 크기는 주석을 포함한, 압축하지 않은 원본 기준입니다.
+
+브라우저 모듈 예제 페이지는 [`examples/demo/`](examples/demo/) 에 있습니다. `node examples/serve.js` 를 실행하고
+`http://127.0.0.1:8080/examples/demo/` 를 여세요. 엄격한 CSP(`script-src 'self'; style-src 'self'`) 아래에서 동작합니다.
 
 ## 공통 규칙
 
@@ -134,6 +139,48 @@ TLS 동작:
 
 테스트: 테스트 파일 안의 가짜 SMTP 서버(실제 메일 없음)로 AUTH PLAIN/LOGIN, cc/bcc, 주입 시도, STARTTLS 거절,
 평문 인증 차단, 자체 서명 인증서(`openssl` 이 있을 때)로 implicit TLS·STARTTLS, STARTTLS 주입을 확인합니다.
+
+## docx.js
+
+최소 Word 문서 작성기 (Node). 제목·문단·서식 있는 글(굵게·기울임·밑줄·취소선·코드)·가운데 정렬·쪽 나눔.
+필요한 작은 ZIP 작성기를 같은 파일에 넣어 파일 하나로 복사할 수 있습니다.
+
+```js
+const { docx } = require('./docx.js');
+fs.writeFileSync('report.docx', docx({ title: '주간 보고', body: [{ heading: 1, text: '주간 보고' }, '첫 문단', { text: [{ text: '굵게', bold: true }, ' 보통'] }] }));
+```
+
+- 모든 글자는 XML 이스케이프하고, XML 1.0 에 넣을 수 없는 글자(제어 문자, 짝 없는 서로게이트 등)는 지웁니다.
+- 제목은 Word 기본 스타일(Title, Heading 1–3)을 써서 탐색 창·목차에 나타납니다.
+- **외부 관계·그림·필드가 없어** 문서를 열어도 Word 가 바깥에서 아무것도 가져오지 않습니다.
+- 미지원: 그림, 표, 목록, 머리글/바닥글, docx 읽기.
+
+테스트: 독립 리더로 풀어 CRC 확인, 모든 파트를 엄격한 XML 검사기와 (Windows 에서는) .NET XML 파서로 확인,
+관계·콘텐츠 형식이 실제 파트를 가리키는지, 마크업을 깨려는 입력이 글자 그대로 남는지 확인합니다.
+개발 중 Microsoft Word 로 실제로 열어 확인했습니다.
+
+## websocket.js
+
+Node `http`/`https` 서버에 붙는 WebSocket 서버 (RFC 6455). 상태가 인스턴스마다 따로라 여러 개 만들 수 있습니다.
+
+```js
+const wss = createServer({ server, path: '/ws', allowedOrigins: ['https://example.com'] });
+wss.on('connection', (client, req) => {
+  client.on('message', (data, isBinary) => client.send(isBinary ? data : 'echo: ' + data));
+});
+```
+
+주요 옵션: `allowedOrigins`(브라우저용 서버라면 꼭 설정 — 교차 사이트 WebSocket 탈취 방지), `verify(req)`,
+`selectProtocol`, `maxClients`, `maxMessageBytes`(기본 1 MiB, 선언된 길이로 본문을 받기 전에 거절),
+`maxBufferedBytes`(느린 클라이언트 보호, 1013 으로 닫음), `heartbeatMs`(기본 30초), `closeTimeoutMs`.
+리스너에서 던진 예외는 서버의 `error` 이벤트로 알리고 연결·프로세스를 죽이지 않습니다.
+
+프로토콜: 핸드셰이크 검사(400/426), 업그레이드 요청과 함께 온 바이트 처리, 마스킹 필수, RSV 비트, 조각 조립과 사이에
+끼는 제어 프레임, 규칙 위반 1002, 잘못된 UTF-8 1007, 닫기 코드 검사와 응답. 미지원: permessage-deflate, 클라이언트
+(Node 22+ 의 전역 `WebSocket` 이나 브라우저를 쓰세요).
+
+테스트: Node 내장 `WebSocket` 클라이언트와 테스트가 직접 만든 원시 프레임으로 핸드셰이크, 1002/1007/1009 경우 전부,
+한 번에 온 프레임 100개, ping/pong, 닫기, 백프레셔, 하트비트를 확인합니다.
 
 ## 라이선스
 

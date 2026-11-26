@@ -1,0 +1,66 @@
+:root {
+  --bg: #fbfbfa;
+  --fg: #1d1d1b;
+  --muted: #6b6b66;
+  --line: #d9d9d4;
+  --panel: #ffffff;
+  --accent: #1f5f8b;
+  --ins: #e3f4e1;
+  --del: #fbe4e2;
+  color-scheme: light dark;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #161615;
+    --fg: #e8e8e3;
+    --muted: #a0a09a;
+    --line: #3a3a37;
+    --panel: #1f1f1d;
+    --accent: #8cc2e8;
+    --ins: #1f3a22;
+    --del: #45201e;
+  }
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  padding: 0 16px 48px;
+  background: var(--bg);
+  color: var(--fg);
+  font: 15px/1.5 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}
+header, main { max-width: 960px; margin: 0 auto; }
+header { padding: 24px 0 8px; border-bottom: 1px solid var(--line); }
+h1 { margin: 0 0 4px; font-size: 22px; }
+h2 { margin: 0 0 12px; font-size: 17px; color: var(--accent); }
+header p { margin: 0; color: var(--muted); }
+section { margin-top: 24px; padding: 16px; background: var(--panel); border: 1px solid var(--line); border-radius: 6px; }
+label { display: block; margin: 8px 0 4px; color: var(--muted); font-size: 13px; }
+input, select, textarea {
+  width: 100%;
+  padding: 8px;
+  font: inherit;
+  color: var(--fg);
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: 4px;
+}
+textarea { resize: vertical; }
+.two { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+@media (max-width: 640px) { .two { grid-template-columns: 1fr; } }
+.qr { width: 220px; max-width: 100%; margin-top: 12px; }
+.qr svg { display: block; width: 100%; height: auto; }
+.info { color: var(--muted); font-size: 13px; overflow-wrap: anywhere; }
+.md { margin-top: 12px; padding: 8px 12px; border-left: 3px solid var(--line); overflow-wrap: anywhere; }
+.md table { border-collapse: collapse; }
+.md th, .md td { border: 1px solid var(--line); padding: 2px 8px; }
+.md pre { overflow-x: auto; padding: 8px; background: var(--bg); }
+.md img { max-width: 100%; }
+.md .task-list-item { list-style: none; }
+.md input[type="checkbox"] { width: auto; margin: 0 6px 0 -20px; padding: 0; }
+.diff { margin-top: 12px; padding: 8px; background: var(--bg); overflow-x: auto; white-space: pre-wrap; }
+.diff .ins { display: block; background: var(--ins); }
+.diff .del { display: block; background: var(--del); }
+.diff .eq { display: block; }
+.swatch { display: inline-block; padding: 4px 10px; border: 1px solid var(--line); border-radius: 4px; }
+.pass { color: var(--accent); }

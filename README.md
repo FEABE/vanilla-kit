@@ -15,8 +15,14 @@ No bundler, no npm packages, no minifier, no third-party code anywhere.
 | [`browser/color.js`](#colorjs) | browser + Node | 8.3 KB / 3.3 KB | `VanillaColor.contrast(VanillaColor.parse('#777'), VanillaColor.parse('#fff'))` |
 | [`node/zip.js`](#zipjs) | Node | 8.1 KB / 3.0 KB | `zip([{ name: 'a.txt', data: 'hi' }])` → `Buffer` |
 | [`node/smtp.js`](#smtpjs) | Node | 13.9 KB / 5.2 KB | `await sendMail({ host, port, user, pass }, { from, to, subject, text })` |
+| [`node/docx.js`](#docxjs) | Node | 11.8 KB / 4.2 KB | `docx({ title, body: [{ heading: 1, text: 'Hi' }, 'Paragraph'] })` → `Buffer` |
+| [`node/websocket.js`](#websocketjs) | Node | 20.9 KB / 6.8 KB | `createServer({ server, path: '/ws' }).on('connection', c => c.on('message', ...))` |
 
 Sizes are of the unminified source, comments included.
+
+A demo page for the browser modules lives in [`examples/demo/`](examples/demo/). Run `node examples/serve.js` and
+open `http://127.0.0.1:8080/examples/demo/` — the server sends
+`Content-Security-Policy: default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self'` and everything still works.
 
 ## Conventions
 
@@ -221,6 +227,95 @@ SMTPUTF8, pipelining, OAuth2, connection reuse.
 transcripts, cc/bcc handling, refused recipients, injection attempts in addresses and subject, STARTTLS refusal,
 the plain-AUTH guard, implicit TLS and STARTTLS with a throwaway self-signed certificate (created with `openssl`
 if available, otherwise those tests are skipped), untrusted certificates, and the STARTTLS injection case.
+
+## docx.js
+
+Minimal Word document writer (Node). Headings, paragraphs and formatted runs — enough for generated reports.
+The small ZIP writer it needs is included in the same file, so it stays a one-file copy.
+
+```js
+const { docx } = require('./docx.js');
+const buf = docx({
+  title: 'Weekly report',               // document property
+  creator: 'Reporting job',             // document property (optional)
+  body: [
+    { heading: 1, text: 'Weekly report' },
+    'A plain paragraph.\nA line break inside it.',
+    { text: ['Mixed ', { text: 'bold', bold: true }, ' and ', { text: 'italic', italic: true }, ' runs.'] },
+    { text: 'Centered', align: 'center' },
+    { pageBreak: true },
+    { heading: 2, text: 'Details' }
+  ]
+}, { date: new Date('2026-01-01T00:00:00Z') });
+require('node:fs').writeFileSync('report.docx', buf);
+```
+
+- Block: a string, `{ text, heading?: 1|2|3, title?: true, align?: 'left'|'center'|'right'|'both' }` or `{ pageBreak: true }`.
+  `text` is a string or an array of runs; a run is a string or `{ text, bold, italic, underline, strike, code }`.
+- `\n` becomes a line break, `\t` a tab. Everything is XML-escaped, and characters XML 1.0 cannot contain (control
+  characters, lone surrogates, U+FFFE/U+FFFF) are removed, so any input string produces a valid file.
+- Headings use Word's built-in Title / Heading 1–3 styles (defined in `styles.xml`), so they show up in the
+  navigation pane and table of contents.
+- The package contains only `[Content_Types].xml`, `_rels/.rels`, `docProps/core.xml`, `word/document.xml`,
+  `word/styles.xml` and `word/_rels/document.xml.rels`. **No external relationships, images or fields** — opening
+  the file never makes Word fetch anything.
+- Not supported: images, tables, lists, headers/footers, comments, reading .docx.
+
+**Tests**: the package is unzipped by the independent test reader (CRC checked), every part is checked by a strict
+well-formedness checker and — on Windows — by the .NET XML parser; content types and relationships must resolve
+to existing parts; text with markup-breaking input survives intact; invalid characters are removed. The sample
+document was also opened in Microsoft Word during development (2 pages, built-in heading styles applied).
+
+## websocket.js
+
+WebSocket server (RFC 6455) that attaches to Node's `http`/`https` server. Per-instance state — create as many as you like.
+
+```js
+const http = require('node:http');
+const { createServer } = require('./websocket.js');
+const server = http.createServer(app).listen(8080);
+const wss = createServer({ server, path: '/ws', allowedOrigins: ['https://example.com'] });
+wss.on('connection', (client, req) => {
+  client.on('message', (data, isBinary) => client.send(isBinary ? data : 'echo: ' + data));
+  client.on('close', (code, reason) => {});
+});
+wss.broadcast('hello everyone');
+```
+
+Options (all optional):
+
+| Option | Default | Meaning |
+| --- | --- | --- |
+| `server` | — | http(s) server to attach to. Without it, call `wss.handleUpgrade(req, socket, head)` yourself. |
+| `path` | any | Only this pathname is accepted (query ignored). Other paths are left to other `upgrade` listeners, or get 404. |
+| `allowedOrigins` | not checked | Exact `Origin` values. Set this for browser-facing servers (cross-site WebSocket hijacking); missing/unknown Origin → 403. |
+| `verify(req)` | — | Return / resolve `false` to refuse with 403 (e.g. check a session cookie). |
+| `selectProtocol(list, req)` | — | Choose one of the client's subprotocols. |
+| `maxClients` | 0 (unlimited) | Further upgrades get 503. |
+| `maxMessageBytes` | 1 MiB | Per frame (checked from the declared length before the body arrives) and per reassembled message → close 1009. |
+| `maxBufferedBytes` | 1 MiB | Slow reader protection: when more would be queued, `send()` returns false and the client is closed with 1013. 0 = off. |
+| `heartbeatMs` | 30000 | Ping interval; a client silent since the previous ping is disconnected. 0 = off. |
+| `closeTimeoutMs` | 5000 | Socket is destroyed if the peer does not answer our close frame in time. |
+
+Server: `connection` (client, req) and `error` (err, client) events — exceptions thrown by your listeners are
+reported there (or printed with `console.error` if nobody listens) and do not take the connection or process down.
+`.clients` (Set), `.broadcast(data, except?)`, `.handleUpgrade()`, `.close(code?, reason?)`.
+
+Client: `message` (data, isBinary) — a string for text, a `Buffer` for binary — plus `ping`, `pong`, `close`
+(code, reason). `.send(data)` (string → text frame; Buffer / Uint8Array / ArrayBuffer → binary), `.ping()`,
+`.close(code = 1000, reason)`, `.terminate()`, `.id`, `.protocol`, `.remoteAddress`, `.readyState`, `.bufferedAmount`.
+
+Protocol handling: handshake validation (GET, `Upgrade`/`Connection` headers, 16-byte base64 key, version 13 →
+400 / 426), bytes sent together with the upgrade request are processed, client frames must be masked, RSV bits must
+be 0, fragmentation with interleaved control frames, invalid control frames / opcodes / continuation → 1002, invalid
+UTF-8 in text or close reasons → 1007, close codes validated and echoed. Not supported: permessage-deflate, and there
+is no client — use the global `WebSocket` (Node 22+, browsers).
+
+**Tests**: Node's built-in `WebSocket` client (text/binary round trip, clean close both ways, subprotocols,
+broadcast; skipped on Node without it) and raw frames written by the test: handshake rules (including the RFC 6455
+accept-key example), origin / verify / maxClients, early data in the upgrade request, fragmentation, 100 frames in
+one TCP write, every 1002 / 1007 / 1009 case, declared 2^40-byte frames refused without waiting, ping/pong, close echo,
+listener exceptions, backpressure and heartbeat.
 
 ---
 
