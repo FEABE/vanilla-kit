@@ -214,6 +214,13 @@ class WebSocketClient extends EventEmitter {
 		payload.writeUInt16BE(code, 0);
 		reasonBuf.copy(payload, 2);
 		try { this._socket.write(encodeFrame(OP.CLOSE, payload)); } catch (_) { /* ignore */ }
+		this._armCloseTimer();
+	}
+
+	// Once closing, the socket is destroyed if the peer has not closed the TCP connection within closeTimeoutMs,
+	// so a peer that never finishes the close handshake cannot hold a client slot forever.
+	_armCloseTimer() {
+		if (this._closeTimer) return;
 		const self = this;
 		this._closeTimer = setTimeout(function () { self.terminate(); }, this._wss.options.closeTimeoutMs);
 		if (this._closeTimer.unref) this._closeTimer.unref();
@@ -227,6 +234,7 @@ class WebSocketClient extends EventEmitter {
 		this._buffer = Buffer.alloc(0);
 		this._fragments = null;
 		try { this._socket.end(); } catch (_) { /* ignore */ }
+		this._armCloseTimer();
 	}
 
 	_emitSafe(event) {
@@ -323,6 +331,7 @@ class WebSocketClient extends EventEmitter {
 		}
 		this.readyState = 'closing';
 		try { this._socket.end(); } catch (_) { /* ignore */ }
+		this._armCloseTimer();
 		return false;
 	}
 

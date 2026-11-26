@@ -14,9 +14,9 @@
 | [`browser/diff.js`](#diffjs) | 브라우저 + Node | 6.6 KB / 2.7 KB | `VanillaDiff.diffLines(oldText, newText)` |
 | [`browser/color.js`](#colorjs) | 브라우저 + Node | 8.3 KB / 3.3 KB | `VanillaColor.contrast(VanillaColor.parse('#777'), VanillaColor.parse('#fff'))` |
 | [`node/zip.js`](#zipjs) | Node | 8.1 KB / 3.0 KB | `zip([{ name: 'a.txt', data: 'hi' }])` → `Buffer` |
-| [`node/smtp.js`](#smtpjs) | Node | 13.9 KB / 5.2 KB | `await sendMail({ host, port, user, pass }, { from, to, subject, text })` |
+| [`node/smtp.js`](#smtpjs) | Node | 14.0 KB / 5.2 KB | `await sendMail({ host, port, user, pass }, { from, to, subject, text })` |
 | [`node/docx.js`](#docxjs) | Node | 11.8 KB / 4.2 KB | `docx({ title, body: [{ heading: 1, text: '제목' }, '문단'] })` → `Buffer` |
-| [`node/websocket.js`](#websocketjs) | Node | 20.9 KB / 6.8 KB | `createServer({ server, path: '/ws' }).on('connection', c => c.on('message', ...))` |
+| [`node/websocket.js`](#websocketjs) | Node | 21.2 KB / 6.9 KB | `createServer({ server, path: '/ws' }).on('connection', c => c.on('message', ...))` |
 
 크기는 주석을 포함한, 압축하지 않은 원본 기준입니다.
 

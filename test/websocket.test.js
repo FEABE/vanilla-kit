@@ -297,6 +297,29 @@ test('ping gets a pong with the same payload; server frames are never masked; cl
     assert.deepEqual(s.closes[s.closes.length - 1], [4000, 'later']);
 });
 
+test('a peer that sends close but keeps TCP open is dropped after closeTimeoutMs (no leaked client slot)', async function () {
+    const s = await start({ closeTimeoutMs: 150, maxClients: 1 });
+    const socket = net.connect({ port: s.port, host: '127.0.0.1', allowHalfOpen: true });   // ignores the server's FIN
+    let serverClient = null;
+    s.wss.once('connection', function (c) { serverClient = c; });
+    socket.on('error', function () {});
+    await new Promise(function (resolve) {
+        socket.on('connect', function () {
+            socket.write(['GET /ws HTTP/1.1', 'Host: 127.0.0.1', 'Upgrade: websocket', 'Connection: Upgrade',
+                'Sec-WebSocket-Key: ' + crypto.randomBytes(16).toString('base64'), 'Sec-WebSocket-Version: 13', '', ''].join('\r\n'));
+        });
+        socket.once('data', function () { socket.write(frame(0x8, Buffer.from([0x03, 0xE8]))); resolve(); });
+    });
+    await new Promise(function (r) { setTimeout(r, 50); });
+    assert.equal(s.wss.clients.size, 1, 'still closing');
+    await new Promise(function (r) { setTimeout(r, 300); });
+    assert.equal(s.wss.clients.size, 0, 'slot released');
+    assert.equal(serverClient.readyState, 'closed');
+    assert.equal(serverClient._socket.destroyed, true, 'server destroyed its socket');
+    socket.destroy();
+    assert.equal((await rawSession(s.port, [], { waitMs: 200 })).status, 101, 'a new client fits again');
+});
+
 test('an exception in a message listener is reported and the connection stays up', async function () {
     const s = await start();
     const session = await rawSession(s.port, [frame(0x1, 'throw'), frame(0x1, 'after')], { waitMs: 300 });
