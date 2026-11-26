@@ -1,0 +1,9 @@
+{
+  "name": "vanilla-kit",
+  "private": true,
+  "description": "Small, zero-dependency, single-file JavaScript modules. Copy one file into your project.",
+  "license": "MIT",
+  "scripts": {
+    "test": "node --test"
+  }
+}
