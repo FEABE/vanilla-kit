@@ -19,7 +19,7 @@ test('dist/*.min.js is up to date and starts with a license line', function () {
         assert.ok(fs.existsSync(file), 'missing dist/' + name + '.min.js — run node scripts/build-min.js');
         const code = fs.readFileSync(file, 'utf8');
         assert.equal(code, build(name), 'dist/' + name + '.min.js is out of date — run node scripts/build-min.js');
-        assert.match(code, /^\/\*! vanilla-kit \d+\.\d+\.\d+ \| browser\/[a-z]+\.js \| MIT License \*\/\n/);
+        assert.match(code, /^\/\*! vanilla-kit \d+\.\d+\.\d+ \| browser\/[a-z]+\.js \| MIT License \| \(c\) 2026 FEABE \*\/\n/);
         assert.ok(!/\r/.test(code));
     }
 });

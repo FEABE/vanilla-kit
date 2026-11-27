@@ -1,6 +1,6 @@
 {
   "name": "vanilla-kit",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "private": true,
   "description": "Small, zero-dependency, single-file JavaScript modules. Copy one file into your project.",
   "license": "MIT",

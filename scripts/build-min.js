@@ -21,7 +21,7 @@ function build(name) {
     const src = fs.readFileSync(path.join(ROOT, 'browser', name + '.js'), 'utf8').replace(/\r\n?/g, '\n');
     const r = minify(src);
     if (r.skipped) throw new Error(name + '.js: names were not shortened (' + r.skipped + ')');
-    return '/*! vanilla-kit ' + version() + ' | browser/' + name + '.js | MIT License */\n' + r.code + '\n';
+    return '/*! vanilla-kit ' + version() + ' | browser/' + name + '.js | MIT License | (c) 2026 FEABE */\n' + r.code + '\n';
 }
 
 if (require.main === module) {
