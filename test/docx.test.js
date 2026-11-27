@@ -12,7 +12,7 @@ const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
 const { spawnSync } = require('node:child_process');
-const { docx, escapeXml } = require('../node/docx.js');
+const { docx, escapeXml } = require('./helpers/subject.js')('node/docx.js');
 const { readZip } = require('./helpers/read-zip.js');
 
 const DATE = new Date('2026-01-02T03:04:06Z');

@@ -1,9 +1,14 @@
 {
   "name": "vanilla-kit",
+  "version": "0.2.0",
   "private": true,
   "description": "Small, zero-dependency, single-file JavaScript modules. Copy one file into your project.",
   "license": "MIT",
+  "bin": {
+    "vanilla-minify": "bin/minify.js"
+  },
   "scripts": {
-    "test": "node --test"
+    "test": "node --test",
+    "build": "node scripts/build-min.js"
   }
 }

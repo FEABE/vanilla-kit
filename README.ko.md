@@ -1,7 +1,8 @@
 # vanilla-kit
 
 **의존성 0개**, **파일 하나**로 된 작은 JavaScript 모듈 모음입니다. 모두 직접 작성했습니다.
-번들러도, npm 패키지도, 압축기도, 제3자 코드도 쓰지 않습니다.
+번들러도, npm 패키지도, 제3자 코드도 쓰지 않습니다. `.min.js` 를 만드는 압축기도 이 저장소의 모듈
+([`browser/minify.js`](#minifyjs))입니다.
 
 **파일 하나를 프로젝트에 복사하면 바로 동작합니다.** 모듈마다 테스트와 설명 절이 따로 있습니다.
 
@@ -13,12 +14,18 @@
 | [`browser/markdown.js`](#markdownjs) | 브라우저 + Node | 24.0 KB / 7.8 KB | `el.innerHTML = VanillaMarkdown.toHtml(src)` (기본값이 XSS 안전) |
 | [`browser/diff.js`](#diffjs) | 브라우저 + Node | 6.6 KB / 2.7 KB | `VanillaDiff.diffLines(oldText, newText)` |
 | [`browser/color.js`](#colorjs) | 브라우저 + Node | 8.3 KB / 3.3 KB | `VanillaColor.contrast(VanillaColor.parse('#777'), VanillaColor.parse('#fff'))` |
+| [`browser/minify.js`](#minifyjs) | 브라우저 + Node | 47.2 KB / 12.6 KB | `VanillaMinify.minify(src).code` (+ 명령줄 `bin/minify.js`) |
 | [`node/zip.js`](#zipjs) | Node | 8.1 KB / 3.0 KB | `zip([{ name: 'a.txt', data: 'hi' }])` → `Buffer` |
 | [`node/smtp.js`](#smtpjs) | Node | 14.0 KB / 5.2 KB | `await sendMail({ host, port, user, pass }, { from, to, subject, text })` |
 | [`node/docx.js`](#docxjs) | Node | 11.8 KB / 4.2 KB | `docx({ title, body: [{ heading: 1, text: '제목' }, '문단'] })` → `Buffer` |
 | [`node/websocket.js`](#websocketjs) | Node | 21.2 KB / 6.9 KB | `createServer({ server, path: '/ws' }).on('connection', c => c.on('message', ...))` |
 
 크기는 주석을 포함한, 압축하지 않은 원본 기준입니다.
+
+브라우저 모듈의 **압축본**은 [`dist/`](dist/) 에 있습니다(`dist/qr.min.js` …, `node scripts/build-min.js` 로 이
+저장소의 압축기가 만듦). 개발할 때는 읽을 수 있는 원본, 운영에는 `.min.js` 를 쓰세요. 테스트 전체를 `dist/` 파일로
+한 번 더 돌려 동작이 같은지 확인합니다(`test/minified.test.js`). 압축본 크기(원본 / gzip): qr 10.0 / 4.3 KB,
+markdown 11.7 / 4.9 KB, diff 2.8 / 1.5 KB, color 4.3 / 2.1 KB, minify 24.9 / 8.4 KB.
 
 브라우저 모듈 예제 페이지는 [`examples/demo/`](examples/demo/) 에 있습니다. `node examples/serve.js` 를 실행하고
 `http://127.0.0.1:8080/examples/demo/` 를 여세요. 엄격한 CSP(`script-src 'self'; style-src 'self'`) 아래에서 동작합니다.
@@ -31,7 +38,7 @@
   엄격한 CSP(`script-src 'self'`) 아래에서도 동작합니다.
 - **Node 모듈**(`node/`)은 CommonJS 이며 Node 내장 모듈(`node:zlib`, `node:net`, `node:tls`, `node:crypto`)만 씁니다.
   ES 모듈 프로젝트에서는 파일 이름을 `.cjs` 로 바꿔 `import` 하거나 `node:module` 의 `createRequire` 를 쓰세요.
-- **테스트**: `node --test` (Node 18 이상, 설치할 것 없음). 운영체제 도구나 최신 Node 가 필요한 검사는 없으면 건너뜁니다.
+- **테스트**: `node --test` (Node 18 이상, 설치할 것 없음. `VANILLA_KIT_MIN=1` 이면 압축본만). 운영체제 도구나 최신 Node 가 필요한 검사는 없으면 건너뜁니다.
 - **라이선스**: MIT.
 
 ## qr.js
@@ -85,6 +92,33 @@ Myers 알고리즘(O((N+M)·D)) 줄·단어 비교. `diffLines`, `diffWords`, `h
 색 읽기·변환과 WCAG 2.x 대비율. `parse`(HEX, `rgb()`, `hsl()`, 기본 색 이름 일부), `toHex`/`toRgbString`/`toHslString`,
 `luminance`, `contrast`, `grade`, `suggest`(색상·채도는 두고 밝기만 바꿔 기준을 넘는 가장 가까운 색),
 `formatRatio`(반올림이 아니라 버림 — 4.497 이 "4.50" 으로 보이지 않게).
+
+## minify.js
+
+JavaScript 압축기. 주석·공백을 지우고 지역 변수 이름을 줄입니다. 토크나이저와 언어 전체를 읽는 재귀 하강
+구문 분석기(ES2024 스크립트·모듈)를 처음부터 직접 만들었습니다.
+
+```js
+VanillaMinify.minify(src);                        // { code, renamed, bindings, skipped }
+VanillaMinify.minify(src, { mangle: false });     // 주석·공백만
+VanillaMinify.minify(src, { keepFnames: true });  // 함수 이름 유지 (fn.name 을 읽는 코드)
+```
+
+```sh
+node bin/minify.js app.js -o app.min.js           # 명령줄 (설치 없음, CRLF → LF 정규화)
+```
+
+- **추측하지 않고 실패합니다.** 프로그램 전체를 읽지 못하면(문법 오류, JSX, TypeScript, 데코레이터, `<!--` 주석)
+  아무것도 만들지 않고 `.line` / `.col` 이 붙은 오류를 던집니다.
+- `/` 가 정규식인지 나눗셈인지는 구문 분석기가 정합니다. 토크나이저의 추측이 틀리면 그 위치부터 다시 읽습니다.
+- 줄바꿈은 자동 세미콜론 삽입(ASI)에 영향이 없을 때만 지웁니다. 남기는 라이선스 주석은 제자리에, 줄바꿈 없이 씁니다.
+- 이름 줄이기는 보수적입니다. 맨 바깥 이름·속성 이름·레이블·export 는 바꾸지 않고, 직접 `eval`·`with`·
+  `\u` 이스케이프 이름이 있으면 통째로 건너뜁니다. 블록 안 함수 선언(같은 이름의 바깥 변수 포함, Annex B),
+  클래스 이름(`keepClassnames`, 기본 켜짐), `var` 로 다시 선언한 catch 매개변수는 그대로 둡니다.
+
+테스트: 까다로운 구문마다 압축 전후를 실행해 비교(느슨한 모드·엄격 모드), 압축한 압축기의 출력이 원본 압축기와
+바이트 단위로 같은지 확인. [`scripts/check-corpus.js`](scripts/check-corpus.js) 로 1,134개 파일 / 23.8 MB
+(애플리케이션 코드와 큰 제3자 라이브러리)를 검사해 실패 0, 거부 0 (LF·CRLF 모두), 결과 크기는 입력의 61.9 %.
 
 ## zip.js
 

@@ -6,7 +6,7 @@
  */
 const { test } = require('node:test');
 const assert = require('node:assert/strict');
-const M = require('../browser/markdown.js');
+const M = require('./helpers/subject.js')('browser/markdown.js');
 
 const md = (s, o) => M.toHtml(s, o).trim();
 

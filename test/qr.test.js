@@ -7,7 +7,7 @@
  */
 const { test } = require('node:test');
 const assert = require('node:assert/strict');
-const Q = require('../browser/qr.js');
+const Q = require('./helpers/subject.js')('browser/qr.js');
 
 // -- Independent GF(256) for the syndrome check --
 const EXP = [], LOG = [];

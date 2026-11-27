@@ -9,7 +9,7 @@ const assert = require('node:assert/strict');
 const http = require('node:http');
 const net = require('node:net');
 const crypto = require('node:crypto');
-const WS = require('../node/websocket.js');
+const WS = require('./helpers/subject.js')('node/websocket.js');
 
 const servers = [];
 after(function () { for (const s of servers) { s.wss.close(); s.http.closeAllConnections && s.http.closeAllConnections(); s.http.close(); } });

@@ -4,7 +4,7 @@
  */
 const { test } = require('node:test');
 const assert = require('node:assert/strict');
-const C = require('../browser/color.js');
+const C = require('./helpers/subject.js')('browser/color.js');
 
 const rgb = (s) => { const c = C.parse(s); return c && [c.r, c.g, c.b, c.a]; };
 

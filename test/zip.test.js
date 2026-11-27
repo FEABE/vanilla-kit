@@ -12,7 +12,7 @@ const os = require('node:os');
 const path = require('node:path');
 const zlib = require('node:zlib');
 const { execFileSync, spawnSync } = require('node:child_process');
-const Z = require('../node/zip.js');
+const Z = require('./helpers/subject.js')('node/zip.js');
 const { readZip } = require('./helpers/read-zip.js');
 
 const FIXED = new Date(2026, 0, 2, 3, 4, 6);

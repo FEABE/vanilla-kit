@@ -6,7 +6,7 @@
  */
 const { test } = require('node:test');
 const assert = require('node:assert/strict');
-const D = require('../browser/diff.js');
+const D = require('./helpers/subject.js')('browser/diff.js');
 
 function lcsLength(a, b) {
     const dp = Array.from({ length: a.length + 1 }, () => new Array(b.length + 1).fill(0));

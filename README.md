@@ -1,7 +1,8 @@
 # vanilla-kit
 
 Small JavaScript modules with **zero dependencies**, each **one hand-written file**.
-No bundler, no npm packages, no minifier, no third-party code anywhere.
+No bundler, no npm packages, no third-party code anywhere — even the minifier that builds the `.min.js` files is
+one of the modules here ([`browser/minify.js`](#minifyjs)).
 
 **Copy one file into your project and it works.** Every module has its own tests and its own section below.
 
@@ -13,12 +14,22 @@ No bundler, no npm packages, no minifier, no third-party code anywhere.
 | [`browser/markdown.js`](#markdownjs) | browser + Node | 24.0 KB / 7.8 KB | `el.innerHTML = VanillaMarkdown.toHtml(src)` (XSS-safe by default) |
 | [`browser/diff.js`](#diffjs) | browser + Node | 6.6 KB / 2.7 KB | `VanillaDiff.diffLines(oldText, newText)` |
 | [`browser/color.js`](#colorjs) | browser + Node | 8.3 KB / 3.3 KB | `VanillaColor.contrast(VanillaColor.parse('#777'), VanillaColor.parse('#fff'))` |
+| [`browser/minify.js`](#minifyjs) | browser + Node | 47.2 KB / 12.6 KB | `VanillaMinify.minify(src).code` (+ CLI `bin/minify.js`) |
 | [`node/zip.js`](#zipjs) | Node | 8.1 KB / 3.0 KB | `zip([{ name: 'a.txt', data: 'hi' }])` → `Buffer` |
 | [`node/smtp.js`](#smtpjs) | Node | 14.0 KB / 5.2 KB | `await sendMail({ host, port, user, pass }, { from, to, subject, text })` |
 | [`node/docx.js`](#docxjs) | Node | 11.8 KB / 4.2 KB | `docx({ title, body: [{ heading: 1, text: 'Hi' }, 'Paragraph'] })` → `Buffer` |
 | [`node/websocket.js`](#websocketjs) | Node | 21.2 KB / 6.9 KB | `createServer({ server, path: '/ws' }).on('connection', c => c.on('message', ...))` |
 
 Sizes are of the unminified source, comments included.
+
+**Minified builds** of the browser modules are in [`dist/`](dist/) (`dist/qr.min.js`, ...), built by this repo's own
+minifier with `node scripts/build-min.js`. Use the readable file while developing and the `.min.js` in production —
+they behave identically: the whole test suite runs a second time against the `dist/` files (`test/minified.test.js`).
+
+| Build | qr | markdown | diff | color | minify |
+| --- | --- | --- | --- | --- | --- |
+| source (raw / gzip) | 19.5 / 6.6 KB | 24.0 / 7.8 KB | 6.6 / 2.7 KB | 8.3 / 3.3 KB | 47.2 / 12.6 KB |
+| `dist/*.min.js` (raw / gzip) | 10.0 / 4.3 KB | 11.7 / 4.9 KB | 2.8 / 1.5 KB | 4.3 / 2.1 KB | 24.9 / 8.4 KB |
 
 A demo page for the browser modules lives in [`examples/demo/`](examples/demo/). Run `node examples/serve.js` and
 open `http://127.0.0.1:8080/examples/demo/` — the server sends
@@ -149,6 +160,54 @@ measuring contrast; a translucent background is assumed to sit on white.
 
 **Tests**: parsing of every syntax plus invalid inputs, 300 conversion round trips, known contrast ratios
 (21:1, 4.48, 4.54, 7.0, ...), grade thresholds, suggestion behaviour.
+
+## minify.js
+
+JavaScript minifier: removes comments and whitespace and shortens local variable names. A tokenizer plus a
+recursive-descent parser for the whole language (ES2024 scripts and modules), written from scratch.
+
+```js
+const r = VanillaMinify.minify(src);                     // { code, renamed, bindings, skipped }
+VanillaMinify.minify(src, { mangle: false });            // comments and whitespace only
+VanillaMinify.minify(src, { keepFnames: true });         // keep function names (code that reads fn.name)
+VanillaMinify.minify(src, { keepLicense: false });       // also drop /*! ... */, @license and @preserve comments
+```
+
+Command line (Node, no install):
+
+```sh
+node bin/minify.js app.js -o app.min.js
+node bin/minify.js app.js --no-mangle --banner "app 1.0 | MIT License" > app.min.js
+```
+
+The CLI normalizes CRLF to LF first, so output is byte-identical on every OS. Prefer `-o` over shell redirection
+(some shells re-encode redirected output).
+
+How it stays correct:
+
+- **It fails instead of guessing.** The parser reads the whole program; if it cannot (syntax error, JSX, TypeScript,
+  decorators, HTML-like `<!--` comments), `minify()` throws an `Error` with `.line` / `.col` and produces nothing.
+- **Regex or division** is decided by the parser, not by a heuristic: when the tokenizer's guess for a `/` is
+  wrong (`if (x) / +/.test(s)`, `class A {}` followed by `/re/`), the source is re-read from that point.
+- **Line breaks** are removed only where automatic semicolon insertion cannot depend on them
+  (`return`/`throw`/`break`/`continue`/`yield`, `++`/`--` and contextual keywords keep theirs).
+  Kept license comments are written in place, without adding line breaks.
+- **Renaming is conservative.** Top-level names (globals, module scope), property names, labels and exports are never
+  renamed. Renaming is turned off entirely when the code uses direct `eval`, `with`, or `\u` escapes in identifiers.
+  Names stay as they are for functions declared inside blocks (and same-named outer variables — Annex B),
+  class names (`keepClassnames`, on by default, for `constructor.name`), catch parameters redeclared with `var`,
+  and variables named `yield` or `await`. A default parameter value never resolves to a name declared in the body.
+  Function names are shortened unless `keepFnames` is set.
+- `inspect(src)` returns the token stream, statement starts and what every identifier resolves to; the tests compare
+  it before and after minifying (whitespace-only output must have the identical token sequence, mangled output must
+  resolve every name to the same declaration).
+
+**Tests**: every tricky construct runs before and after (sloppy and strict): ASI, regex/division, templates,
+classes and private names, destructuring, scoping edge cases, kept comments, unreadable input. The minified minifier
+must produce byte-identical output to the source one. [`scripts/check-corpus.js`](scripts/check-corpus.js) runs the
+same oracles over any folders (`node scripts/check-corpus.js <dir>... [--exclude name] [--crlf]`); over a corpus of
+1,134 files / 23.8 MB (application code plus large third-party libraries) it found 0 failures, 0 refusals
+(LF and CRLF), with output at 61.9 % of the input size.
 
 ## zip.js
 
@@ -322,7 +381,9 @@ listener exceptions, backpressure and heartbeat.
 ## Running the tests
 
 ```sh
-node --test
+node --test                       # source files, then (test/minified.test.js) the whole suite again on the minified builds
+VANILLA_KIT_MIN=1 node --test     # only the minified builds
+node scripts/build-min.js         # rebuild dist/*.min.js after changing a browser module
 ```
 
 ## License
