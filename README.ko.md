@@ -8,6 +8,16 @@
 
 [English README](README.md) — 옵션과 동작의 자세한 설명은 영어 README 가 기준입니다.
 
+**브라우저에서 써 보기:** [QR](https://chlehdwns.dev/tools/qr/) · [마크다운](https://chlehdwns.dev/tools/markdown/) ·
+[diff](https://chlehdwns.dev/tools/diff/) · [색 대비](https://chlehdwns.dev/tools/color/) · [압축기](https://chlehdwns.dev/tools/minify/)
+— 각 페이지에 SRI 가 붙은 `<script>` 코드가 있습니다. **CDN:** [cdn.chlehdwns.dev](https://cdn.chlehdwns.dev/#vanilla-kit) (브라우저 모듈만)
+
+의존성 없이 직접 만든 도구 모음:
+[vanilla-arch](https://github.com/FEABE/vanilla-arch) (구성도) ·
+[vanilla-kit](https://github.com/FEABE/vanilla-kit) (작은 모듈) ·
+[vanilla-build](https://github.com/FEABE/vanilla-build) (빌드) ·
+[vanilla-deploy](https://github.com/FEABE/vanilla-deploy) (배포)
+
 | 모듈 | 환경 | 크기 (원본 / gzip) | 한 줄 사용법 |
 | --- | --- | --- | --- |
 | [`browser/qr.js`](#qrjs) | 브라우저 + Node | 19.5 KB / 6.6 KB | `VanillaQR.toSvg(VanillaQR.encode('https://example.com'))` |

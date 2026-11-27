@@ -8,6 +8,16 @@ one of the modules here ([`browser/minify.js`](#minifyjs)).
 
 [한국어 README](README.ko.md)
 
+**Try them in the browser:** [QR](https://chlehdwns.dev/tools/qr/) · [Markdown](https://chlehdwns.dev/tools/markdown/) ·
+[Diff](https://chlehdwns.dev/tools/diff/) · [Color](https://chlehdwns.dev/tools/color/) · [Minify](https://chlehdwns.dev/tools/minify/)
+— each page has a copy-paste `<script>` snippet with SRI. **CDN:** [cdn.chlehdwns.dev](https://cdn.chlehdwns.dev/#vanilla-kit) (browser modules only)
+
+Part of a small family of zero-dependency, hand-written tools:
+[vanilla-arch](https://github.com/FEABE/vanilla-arch) (diagrams) ·
+[vanilla-kit](https://github.com/FEABE/vanilla-kit) (small modules) ·
+[vanilla-build](https://github.com/FEABE/vanilla-build) (build) ·
+[vanilla-deploy](https://github.com/FEABE/vanilla-deploy) (deploy)
+
 | Module | Env | Size (raw / gzip) | One-line usage |
 | --- | --- | --- | --- |
 | [`browser/qr.js`](#qrjs) | browser + Node | 19.5 KB / 6.6 KB | `VanillaQR.toSvg(VanillaQR.encode('https://example.com'))` |
